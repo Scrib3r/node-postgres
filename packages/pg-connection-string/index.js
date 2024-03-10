@@ -12,6 +12,8 @@ function parse(str) {
     return { host: config[0], database: config[1] }
   }
 
+  const multihost = str.includes(',')
+
   // Check for empty host in URL
 
   const config = {}
@@ -19,11 +21,17 @@ function parse(str) {
   let dummyHost = false
   if (/ |%[^a-f0-9]|%[a-f0-9][^a-f0-9]/i.test(str)) {
     // Ensure spaces are encoded as %20
-    str = encodeURI(str).replace(/\%25(\d\d)/g, '%$1')
+    str = encodeURI(str).replace(/%25(\d\d)/g, '%$1')
   }
 
+  let host = str
+  host = host.slice(host.indexOf('://') + 3).split(/[?/]/)[0]
+  host = decodeURIComponent(host.slice(host.indexOf('@') + 1))
+
+  const multihosts = host.split(',')
+
   try {
-    result = new URL(str, 'postgres://base')
+    result = new URL(str.replace(host, multihosts[0]), 'postgres://base')
   } catch (e) {
     // The URL is invalid so try again with a dummy host
     result = new URL(str.replace('@/', '@___DUMMY___/'), 'postgres://base')
@@ -34,11 +42,12 @@ function parse(str) {
   for (const entry of result.searchParams.entries()) {
     config[entry[0]] = entry[1]
   }
+  config.multihost = multihosts.length > 1 ? multihosts : null
 
   config.user = config.user || decodeURIComponent(result.username)
   config.password = config.password || decodeURIComponent(result.password)
 
-  if (result.protocol == 'socket:') {
+  if (result.protocol === 'socket:') {
     config.host = decodeURI(result.pathname)
     config.database = result.searchParams.get('db')
     config.client_encoding = result.searchParams.get('encoding')

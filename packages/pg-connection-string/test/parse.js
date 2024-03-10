@@ -1,7 +1,6 @@
 'use strict'
 
 var chai = require('chai')
-var expect = chai.expect
 chai.should()
 
 var parse = require('../').parse
@@ -13,6 +12,17 @@ describe('parse', function () {
     subject.password.should.equal('pw')
     subject.host.should.equal('boom')
     subject.port.should.equal('381')
+    subject.database.should.equal('lala')
+  })
+
+  it('using connection string with multiple hosts', () => {
+    const subject = parse('postgres://brian:pw@host1:123,host2:456/lala')
+    subject.user.should.equal('brian')
+    subject.host.should.equal('host1')
+    subject.multihost.should.deep.equal(['host1:123', 'host2:456'])
+
+    subject.port.should.equal('123')
+    subject.password.should.equal('pw')
     subject.database.should.equal('lala')
   })
 
