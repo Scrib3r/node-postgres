@@ -4,15 +4,17 @@
 //MIT License
 
 const { URL } = require('url')
-//parses a connection string
+//
+/**
+ * parses a connection string
+ * @param str - a connection string to Postgres
+ */
 function parse(str) {
   //unix socket
   if (str.charAt(0) === '/') {
     const config = str.split(' ')
     return { host: config[0], database: config[1] }
   }
-
-  const multihost = str.includes(',')
 
   // Check for empty host in URL
 
