@@ -44,7 +44,6 @@ function parse(str) {
   for (const entry of result.searchParams.entries()) {
     config[entry[0]] = entry[1]
   }
-  config.multihost = multihosts.length > 1 ? multihosts : null
 
   config.user = config.user || decodeURIComponent(result.username)
   config.password = config.password || decodeURIComponent(result.password)
@@ -55,6 +54,19 @@ function parse(str) {
     config.client_encoding = result.searchParams.get('encoding')
     return config
   }
+
+  if (multihosts.length > 1) {
+    const hosts = []
+    const ports = []
+    for (const hostname of multihosts) {
+      const [host, port] = hostname.split(':')
+      hosts.push(host)
+      ports.push(port)
+    }
+    config.host = hosts.join(',')
+    config.port = ports.join(',')
+  }
+
   const hostname = dummyHost ? '' : result.hostname
   if (!config.host) {
     // Only set the host if there is no equivalent query param.

@@ -8,7 +8,6 @@ export interface ConnectionOptions {
   database: string | null | undefined
   client_encoding?: string
   ssl?: boolean | string
-  multihost?: string[] | null
 
   application_name?: string
   fallback_application_name?: string

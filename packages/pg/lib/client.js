@@ -21,7 +21,9 @@ class Client extends EventEmitter {
     this.port = this.connectionParameters.port
     this.host = this.connectionParameters.host
 
-    // "hiding" the password so it doesn't show up in stack traces
+    this._hostIndex = 0
+
+    // "hiding" the password, so it doesn't show up in stack traces
     // or if the client is console.logged
     Object.defineProperty(this, 'password', {
       configurable: true,
@@ -32,7 +34,7 @@ class Client extends EventEmitter {
 
     this.replication = this.connectionParameters.replication
 
-    var c = config || {}
+    const c = config || {}
 
     this._Promise = c.Promise || global.Promise
     this._types = new TypeOverrides(c.types)
@@ -86,8 +88,8 @@ class Client extends EventEmitter {
   }
 
   _connect(callback) {
-    var self = this
-    var con = this.connection
+    const self = this
+    const con = this.connection
     this._connectionCallback = callback
 
     if (this._connecting || this._connected) {
@@ -99,7 +101,6 @@ class Client extends EventEmitter {
     }
     this._connecting = true
 
-    this.connectionTimeoutHandle
     if (this._connectionTimeoutMillis > 0) {
       this.connectionTimeoutHandle = setTimeout(() => {
         con._ending = true
@@ -107,10 +108,13 @@ class Client extends EventEmitter {
       }, this._connectionTimeoutMillis)
     }
 
-    if (this.host && this.host.indexOf('/') === 0) {
-      con.connect(this.host + '/.s.PGSQL.' + this.port)
+    const host = this.host[this._hostIndex]
+    const port = this.port[this._hostIndex]
+
+    if (host && host.indexOf('/') === 0) {
+      con.connect(host + '/.s.PGSQL.' + port)
     } else {
-      con.connect(this.port, this.host)
+      con.connect(port, host)
     }
 
     // once connection is established send startup message
@@ -155,6 +159,7 @@ class Client extends EventEmitter {
         this.emit('end')
       })
     })
+    this._hostIndex = (this._hostIndex + 1) % this.port.length
   }
 
   connect(callback) {
@@ -440,12 +445,15 @@ class Client extends EventEmitter {
 
   cancel(client, query) {
     if (client.activeQuery === query) {
-      var con = this.connection
+      const con = this.connection
 
-      if (this.host && this.host.indexOf('/') === 0) {
-        con.connect(this.host + '/.s.PGSQL.' + this.port)
+      const host = this.host[this._hostIndex]
+      const port = this.port[this._hostIndex]
+
+      if (host && host.indexOf('/') === 0) {
+        con.connect(host + '/.s.PGSQL.' + this.port)
       } else {
-        con.connect(this.port, this.host)
+        con.connect(port, host)
       }
 
       // once connection is established send cancel message
@@ -455,6 +463,7 @@ class Client extends EventEmitter {
     } else if (client.queryQueue.indexOf(query) !== -1) {
       client.queryQueue.splice(client.queryQueue.indexOf(query), 1)
     }
+    this._hostIndex = (this._hostIndex + 1) % this.port.length
   }
 
   setTypeParser(oid, format, parseFn) {

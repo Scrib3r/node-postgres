@@ -1,9 +1,9 @@
 'use strict'
 
-var chai = require('chai')
+const chai = require('chai')
 chai.should()
 
-var parse = require('../').parse
+const { parse } = require('../')
 
 describe('parse', function () {
   it('using connection string in client constructor', function () {
@@ -18,10 +18,8 @@ describe('parse', function () {
   it('using connection string with multiple hosts', () => {
     const subject = parse('postgres://brian:pw@host1:123,host2:456/lala')
     subject.user.should.equal('brian')
-    subject.host.should.equal('host1')
-    subject.multihost.should.deep.equal(['host1:123', 'host2:456'])
-
-    subject.port.should.equal('123')
+    subject.host.should.equal('host1,host2')
+    subject.port.should.equal('123,456')
     subject.password.should.equal('pw')
     subject.database.should.equal('lala')
   })

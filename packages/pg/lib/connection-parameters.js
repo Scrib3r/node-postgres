@@ -63,10 +63,18 @@ class ConnectionParameters {
       this.database = this.user
     }
 
-    this.port = parseInt(val('port', config), 10)
-    this.host = val('host', config)
+    /**
+     * @type {Array<number>}
+     */
+    this.port = val('port', config)
+      .split(',')
+      .map((port) => parseInt(port, 10))
+    /**
+     * @type {Array<string>}
+     */
+    this.host = val('host', config).split(',')
 
-    // "hiding" the password so it doesn't show up in stack traces
+    // "hiding" the password, so it doesn't show up in stack traces
     // or if the client is console.logged
     Object.defineProperty(this, 'password', {
       configurable: true,
@@ -148,7 +156,7 @@ class ConnectionParameters {
       params.push('replication=' + quoteParamValue(this.replication))
     }
     if (this.host) {
-      params.push('host=' + quoteParamValue(this.host))
+      params.push('host=' + quoteParamValue(this.host.join(',')))
     }
     if (this.isDomainSocket) {
       return cb(null, params.join(' '))
@@ -156,11 +164,22 @@ class ConnectionParameters {
     if (this.client_encoding) {
       params.push('client_encoding=' + quoteParamValue(this.client_encoding))
     }
-    dns.lookup(this.host, function (err, address) {
-      if (err) return cb(err, null)
-      params.push('hostaddr=' + quoteParamValue(address))
-      return cb(null, params.join(' '))
-    })
+    Promise.all(
+      this.host.map(
+        (host) =>
+          new Promise((resolve, reject) => {
+            dns.lookup(host, function (err, address) {
+              if (err) return reject(err)
+              resolve(address)
+            })
+          })
+      )
+    )
+      .then((addresses) => {
+        params.push('hostaddr=' + quoteParamValue(addresses.join(',')))
+        cb(null, params.join(' '))
+      })
+      .catch((err) => cb(err, null))
   }
 }
 

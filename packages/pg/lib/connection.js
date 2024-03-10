@@ -1,7 +1,6 @@
 'use strict'
 
-var net = require('net')
-var EventEmitter = require('events').EventEmitter
+const { EventEmitter } = require('events')
 
 const { parse, serialize } = require('pg-protocol')
 const { getStream, getSecureStream } = require('./stream')
@@ -23,21 +22,19 @@ class Connection extends EventEmitter {
 
     this._keepAlive = config.keepAlive
     this._keepAliveInitialDelayMillis = config.keepAliveInitialDelayMillis
-    this.lastBuffer = false
     this.parsedStatements = {}
     this.ssl = config.ssl || false
     this._ending = false
     this._emitMessage = false
-    var self = this
-    this.on('newListener', function (eventName) {
+    this.on('newListener', (eventName) => {
       if (eventName === 'message') {
-        self._emitMessage = true
+        this._emitMessage = true
       }
     })
   }
 
   connect(port, host) {
-    var self = this
+    const self = this
 
     this._connecting = true
     this.stream.setNoDelay(true)
